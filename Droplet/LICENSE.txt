@@ -1,0 +1,13 @@
+Copyright © 2025 Anjali Sinha Dev
+
+This project is provided for viewing and educational purposes only.
+
+You may:
+- View the source code
+
+You may not:
+- Copy, reproduce, or distribute this code
+- Modify or reuse any part of this code in other projects
+- Use this code for commercial or production purposes
+
+All rights reserved.
