@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Node (in case you later add npm tools)
+node_modules/
+
+# OS junk
+Thumbs.db
