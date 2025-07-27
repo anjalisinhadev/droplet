@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title> Droplet-- Water Tracker 💧</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&display=swap');
+
+        body {
+            font-family: 'Playfair Display', serif;
+            background: #dceef2;
+            color: #000303;
+            text-align: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .main-title {
+            font-size: 3.2em;
+            color: #00090d;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 1px 2px 3px rgba(0, 0, 0, 0.15);
+            margin-bottom: 20px;
+            transition: transform 0.2s ease;
+        }
+
+        .main-title:hover {
+            transform: scale(1.02);
+        }
+
+        .dash {
+            color: #7aaeb7;
+            font-weight: 500;
+        }
+
+        .form-container { /* Added a container for the form */
+            margin: 20px auto;
+            max-width: 400px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        input[type="number"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #a2cfe3;
+            border-radius: 8px;
+            width: 50%;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #246f91;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #1b4e66;
+        }
+
+        .stats {
+            margin-top: 30px;
+        }
+
+        .stats p {
+            font-size: 18px;
+            margin: 8px 0;
+        }
+
+        .log {
+            margin-top: 30px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            text-align: left; /* Align log entries to the left */
+        }
+
+        .log-entry {
+            font-size: 16px;
+            margin: 4px 0;
+            color: #555;
+            display: flex; /* For better alignment of amount and time */
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee; /* Separator for entries */
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .log-entry span:first-child {
+            font-weight: bold;
+            color: #246f91;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 8px;
+            height: 30px;
+            width: 400px;
+            margin: 20px auto;
+            overflow: hidden; /* Ensure progress bar stays within bounds */
+        }
+
+        .progress {
+            background: #7aaeb7;
+            height: 100%;
+            border-radius: 8px;
+            color: #fff;
+            line-height: 30px;
+            text-align: center;
+            transition: width 0.5s ease-in-out; /* Smooth transition for progress */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap; /* Prevent percentage from wrapping */
+        }
+
+        /* Chart specific styles */
+        .chart-container {
+            width: 70%;
+            max-width: 600px; /* Limit chart width */
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+        }
+
+        .reset-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #d9534f; /* Red for reset */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .reset-button:hover {
+            background-color: #c9302c;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="main-title">Droplet <span class="dash">--</span> Water Tracker 💧</h1>
+
+    <div class="form-container">
+        <input type="number" id="waterAmount" placeholder="Amount in ml" required>
+        <button id="addWater">Add</button>
+    </div>
+
+    <h2 id="dailyGoalDisplay">Daily Goal: 2000 ml</h2>
+    <p><strong>Total Drunk:</strong> <span id="totalIntake">0</span> ml</p>
+    <p><strong>Remaining:</strong> <span id="remainingWater">2000</span> ml</p>
+
+    <div class="progress-bar">
+        <div class="progress" id="progressBar" style="width: 0%;">
+            0%
+        </div>
+    </div>
+
+    <h2>Water Log:</h2>
+    <div class="log" id="waterLog">
+        <p id="noEntriesMessage" style="color: #888;">No water entries yet. Add some!</p>
+        </div>
+
+    <button class="reset-button" id="resetTracker">Reset Daily Tracker</button>
+
+    <p style="margin-top: 40px;">Track your daily water intake effortlessly!</p>
+
+    <div class="chart-container">
+        <canvas id="waterIntakeChart"></canvas>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const DAILY_GOAL = 2000; // Define daily goal in JavaScript
+
+        // Get HTML elements
+        const waterAmountInput = document.getElementById('waterAmount');
+        const addWaterButton = document.getElementById('addWater');
+        const totalIntakeSpan = document.getElementById('totalIntake');
+        const remainingWaterSpan = document.getElementById('remainingWater');
+        const progressBar = document.getElementById('progressBar');
+        const waterLogDiv = document.getElementById('waterLog');
+        const noEntriesMessage = document.getElementById('noEntriesMessage');
+        const resetTrackerButton = document.getElementById('resetTracker');
+
+        // Chart.js setup
+        let waterIntakeChart; // Declare chart variable globally
+        const ctx = document.getElementById('waterIntakeChart').getContext('2d');
+
+        // Data storage in localStorage
+        // Keys for localStorage
+        const STORAGE_KEY_LOG = 'dropletWaterLog';
+        const STORAGE_KEY_LAST_RESET_DATE = 'dropletLastResetDate';
+
+        let waterLog = []; // Stores objects like { amount: 250, time: "10:30" }
+        let totalIntake = 0;
+
+        // --- Functions ---
+
+        function loadDataFromLocalStorage() {
+            const storedLog = localStorage.getItem(STORAGE_KEY_LOG);
+            const lastResetDate = localStorage.getItem(STORAGE_KEY_LAST_RESET_DATE);
+            const today = new Date().toDateString();
+
+            if (lastResetDate !== today) {
+                // It's a new day, or the tracker hasn't been reset today
+                // Reset everything if the date doesn't match
+                waterLog = [];
+                totalIntake = 0;
+                localStorage.setItem(STORAGE_KEY_LAST_RESET_DATE, today);
+                console.log("New day detected or first load, resetting tracker.");
+            } else if (storedLog) {
+                // Same day, load previous data
+                waterLog = JSON.parse(storedLog);
+                totalIntake = waterLog.reduce((sum, entry) => sum + entry.amount, 0);
+            }
+        }
+
+        function saveDataToLocalStorage() {
+            localStorage.setItem(STORAGE_KEY_LOG, JSON.stringify(waterLog));
+        }
+
+        function updateUI() {
+            totalIntakeSpan.textContent = totalIntake;
+            const remaining = Math.max(0, DAILY_GOAL - totalIntake);
+            remainingWaterSpan.textContent = remaining;
+
+            const progressPercentage = Math.min(100, (totalIntake / DAILY_GOAL) * 100);
+            progressBar.style.width = `${progressPercentage}%`;
+            progressBar.textContent = `${Math.round(progressPercentage)}%`;
+
+            renderWaterLog();
+            updateChart();
+        }
+
+        function renderWaterLog() {
+            waterLogDiv.innerHTML = ''; // Clear existing log
+            if (waterLog.length === 0) {
+                waterLogDiv.appendChild(noEntriesMessage);
+                noEntriesMessage.style.display = 'block';
+            } else {
+                noEntriesMessage.style.display = 'none';
+                waterLog.forEach(entry => {
+                    const logEntry = document.createElement('div');
+                    logEntry.classList.add('log-entry');
+                    logEntry.innerHTML = `<span>${entry.amount} ml</span><span>at ${entry.time}</span>`;
+                    waterLogDiv.appendChild(logEntry);
+                });
+            }
+        }
+
+        function updateChart() {
+            const labels = waterLog.map(entry => entry.time);
+            const data = waterLog.map(entry => entry.amount);
+
+            if (waterIntakeChart) {
+                waterIntakeChart.data.labels = labels;
+                waterIntakeChart.data.datasets[0].data = data;
+                waterIntakeChart.update(); // Update existing chart
+            } else {
+                // Initialize chart if it doesn't exist
+                waterIntakeChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Water Intake (ml)',
+                            data: data,
+                            backgroundColor: 'rgba(122, 174, 183, 0.4)',
+                            borderColor: 'rgba(122, 174, 183, 1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: 'rgba(36, 111, 145, 1)', // Darker points
+                            pointBorderColor: 'rgba(36, 111, 145, 1)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Amount (ml)'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Time'
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Daily Water Intake Trend',
+                                font: {
+                                    size: 18,
+                                    family: 'Playfair Display'
+                                }
+                            },
+                            legend: {
+                                display: false // No need for legend with single dataset
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // --- Event Listeners ---
+
+        addWaterButton.addEventListener('click', () => {
+            const amount = parseInt(waterAmountInput.value);
+            if (!isNaN(amount) && amount > 0) {
+                const now = new Date();
+                const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // e.g., "08:30 AM"
+
+                waterLog.push({ amount: amount, time: time });
+                totalIntake += amount;
+
+                saveDataToLocalStorage();
+                updateUI();
+                waterAmountInput.value = ''; // Clear input field
+            } else {
+                alert('Please enter a valid positive number for water amount.');
+            }
+        });
+
+        resetTrackerButton.addEventListener('click', () => {
+            if (confirm("Are you sure you want to reset your daily water tracker? This will clear all today's entries.")) {
+                waterLog = [];
+                totalIntake = 0;
+                localStorage.setItem(STORAGE_KEY_LAST_RESET_DATE, new Date().toDateString()); // Reset the date
+                saveDataToLocalStorage();
+                updateUI();
+            }
+        });
+
+        // Initial load
+        window.onload = () => {
+            loadDataFromLocalStorage();
+            updateUI();
+        };
+
+    </script>
+</body>
+</html>
